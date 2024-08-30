@@ -98,6 +98,7 @@ if uploaded_file:
             st.markdown(get_image_download_link(buffered, format_), unsafe_allow_html=True)
 
         # Display word count table
+        
         st.subheader("Word Count Table")
         st.write(word_count)
         if st.button('Download Word Count Table as CSV'):
