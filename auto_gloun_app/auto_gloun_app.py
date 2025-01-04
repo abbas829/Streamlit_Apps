@@ -1,10 +1,6 @@
 import streamlit as st
 import pandas as pd
-import os
 from autogluon.tabular import TabularPredictor
-from autogluon.timeseries import TimeSeriesPredictor
-from autogluon.multimodal import MultiModalPredictor
-import json
 
 # App Configuration
 st.set_page_config(
@@ -17,13 +13,18 @@ st.set_page_config(
 )
 
 # Sidebar Options
-st.sidebar.header("Model Configuration")
+st.sidebar.header("App Options")
 task_type = st.sidebar.selectbox(
     "Select Task Type",
     ["Tabular", "Multimodal", "Time Series"]
 )
-time_limit = st.sidebar.slider("Set Time Limit (seconds)", 60, 3600, 60)
-target_column = st.sidebar.text_input("Target Column Name", value="target etc.")
+time_limit_option = st.sidebar.selectbox(
+    "Set Time Limit",
+    ["Auto", "Custom Time Limit"]
+)
+custom_time_limit = st.sidebar.slider("Custom Time Limit (seconds)", 60, 3600, 600) if time_limit_option == "Custom Time Limit" else None
+time_limit = None if time_limit_option == "Auto" else custom_time_limit
+target_column = st.sidebar.text_input("Target Column Name", value="target")
 
 # File Uploads
 st.sidebar.header("Upload Files")
@@ -43,10 +44,17 @@ This app allows you to:
 # Helper: Display a sample DataFrame
 def display_dataframe(file, name):
     if file:
-        df = pd.read_csv(file)
-        st.subheader(f"{name} Data Preview")
-        st.dataframe(df.head())
-        return df
+        try:
+            df = pd.read_csv(file)
+            if df.empty:
+                st.warning(f"The uploaded {name} file is empty.")
+                return None
+            st.subheader(f"{name} Data Preview")
+            st.dataframe(df.head())
+            return df
+        except Exception as e:
+            st.error(f"Error reading {name} file: {e}")
+            return None
     else:
         st.warning(f"Please upload the {name} file.")
         return None
@@ -58,10 +66,11 @@ sample_data = display_dataframe(sample_file, "Sample Submission")
 
 # Train and Generate Predictions
 if st.button("Start Training"):
-    if not train_data or not test_data:
-        st.error("Please upload the required files!")
+    if train_data is None or test_data is None:
+        st.error("Please upload valid training and test files!")
     else:
         st.info(f"Task Type Selected: {task_type}")
+        st.info(f"Time Limit: {'Auto' if time_limit is None else f'{time_limit} seconds'}")
         
         try:
             if task_type == "Tabular":
@@ -71,22 +80,6 @@ if st.button("Start Training"):
                     train_data=train_data,
                     time_limit=time_limit
                 )
-            elif task_type == "Time Series":
-                # Time Series Predictor
-                st.info("Training Time Series Model...")
-                predictor = TimeSeriesPredictor(label=target_column, path="ag_models_timeseries").fit(
-                    train_data=train_data,
-                    time_limit=time_limit
-                )
-            elif task_type == "Multimodal":
-                # Multimodal Predictor
-                st.info("Training Multimodal Model...")
-                predictor = MultiModalPredictor(label=target_column, path="ag_models_multimodal").fit(
-                    train_data=train_data,
-                    time_limit=time_limit
-                )
-            else:
-                st.error("Invalid task type selected!")
 
             # Generate Predictions
             st.success("Training completed successfully!")
@@ -99,7 +92,7 @@ if st.button("Start Training"):
                 submission = sample_data.copy()
                 submission.iloc[:, -1] = predictions.values
             else:
-                submission = predictions
+                submission = pd.DataFrame(predictions, columns=["Prediction"])
 
             # Save Predictions
             submission_file_name = "submission.csv"
@@ -119,7 +112,8 @@ if st.button("Start Training"):
             st.json(predictor.info())
 
         except Exception as e:
-            st.error(f"An error occurred: {str(e)}")
+            st.error(f"An error occurred during training or prediction: {str(e)}")
+
 # Footer
 st.markdown("---")
 st.markdown("""
