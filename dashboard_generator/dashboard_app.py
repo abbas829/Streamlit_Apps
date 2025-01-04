@@ -90,3 +90,9 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# Footer with author info
+st.sidebar.markdown("### Created by: [Tassawar Abbas](https://github.com/Abbas829)")
+st.sidebar.markdown("Contact: [Email](mailto:abbas829@gmail.com)")
+st.sidebar.markdown("Facebook: [Tassawar Abbas](https://www.facebook.com/abbas829)")
+st.sidebar.markdown("Linkedin: [Tassawar Abbas](https://www.linkedin.com/in/abbas829pro)")
