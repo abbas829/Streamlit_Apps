@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 from autogluon.tabular import TabularPredictor
+import json
 
 # App Configuration
 st.set_page_config(
@@ -95,39 +96,32 @@ if st.button("Start Training"):
             leaderboard = predictor.leaderboard(silent=True)
             st.dataframe(leaderboard)
             st.json(predictor.info())
+
+            # Generate and Download Analysis Report
+            st.header("Analysis Report")
+            analysis_summary = {
+                "Best Model": leaderboard.iloc[0]['model'],
+                "Model Performance": leaderboard.iloc[0].to_dict(),
+                "Training Summary": predictor.info(),
+                "Recommendation": {
+                    "Imputation": "Ensure proper handling of missing values.",
+                    "Feature Engineering": "Explore domain-specific feature transformations.",
+                    "Hyperparameter Tuning": {
+                        "Suggestions": ["num_bagging_folds", "stack_ensemble_levels", "time_limit"]
+                    },
+                    "Validation": "Use external validation to avoid overfitting."
+                }
+            }
+            analysis_file_name = "analysis_summary.json"
+            with open(analysis_file_name, "w") as f:
+                json.dump(analysis_summary, f, indent=4)
+            st.download_button(
+                label="Download Analysis Summary",
+                data=open(analysis_file_name, "rb"),
+                file_name=analysis_file_name,
+                mime="application/json"
+            )
             
-            # Best Practices and Critical Analysis
-            st.header("Critical Analysis of AutoGluon Training Process")
-            st.markdown("""
-            ### AutoGluon's Approach to Training
-            AutoGluon employs a robust and automated pipeline that includes:
-            - **Preprocessing**: Handles missing values, categorical encoding, and feature scaling automatically.
-            - **Model Selection**: Trains multiple models and ensembles them for enhanced robustness.
-            - **Hyperparameter Optimization**: Dynamically tunes hyperparameters based on dataset characteristics.
-
-            ### Strengths
-            - **Automation**: Reduces the need for manual intervention.
-            - **Ensemble Strength**: Consistently outperforms individual models.
-            - **Efficiency**: Optimizes for time and resource constraints.
-
-            ### Weaknesses
-            - **Resource Intensive**: High computational requirements for complex ensembles.
-            - **Limited Interpretability**: Difficult to explain individual predictions.
-            - **Overfitting Risk**: Small datasets or high dimensionality can lead to overfitting.
-
-            ### Recommendations
-            1. **Imputation**: Ensure domain-specific alignment in missing value handling.
-            2. **Feature Engineering**: Complement AutoGluon's pipeline with domain-specific transformations.
-            3. **Hyperparameter Tuning**:
-               - Experiment with `num_bagging_folds` and `stack_ensemble_levels`.
-               - Optimize `time_limit` for resource balance.
-            4. **Validation**: Use external validation sets to monitor overfitting.
-            5. **Dataset Scaling**: Standardize numerical features if they vary significantly.
-
-            ### Observed Performance Metrics
-            - Leaderboard rankings provide a detailed comparison of models.
-            - Feature importance insights help in understanding prediction drivers.
-            """)
         except Exception as e:
             st.error(f"An error occurred: {str(e)}")
 
