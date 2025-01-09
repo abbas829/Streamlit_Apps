@@ -114,7 +114,7 @@ if st.button("Start Training"):
         except Exception as e:
             st.error(f"An error occurred during training or prediction: {str(e)}")
 
-# Footer
+# FooterS
 st.markdown("---")
 st.markdown("""
 **Created by Tassawar Abbas**  
